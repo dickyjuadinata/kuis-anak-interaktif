@@ -285,6 +285,9 @@
     namaSiswa = document.getElementById("namaAnak").value.trim();
     if (!namaSiswa) return;
 
+    // Simpan nama ke penyimpanan lokal browser
+    localStorage.setItem("namaSiswaKuis", namaSiswa);
+
     const selectMapelElem = document.getElementById("selectMapel");
     const mapelTerpilih = selectMapelElem.value;
     mapelTerpilihNama = selectMapelElem.options[selectMapelElem.selectedIndex].text;
@@ -408,12 +411,24 @@
   function ulangKuis() {
     document.getElementById("finishScreen").style.display = "none";
     document.getElementById("startScreen").style.display = "block";
-    document.getElementById("namaAnak").value = "";
-    document.getElementById("btnMulai").disabled = true;
+    
+    // Nama TIDAK dikosongkan lagi, sehingga user tidak perlu mengetik ulang
+    
+    // Perbarui validasi agar tombol "Mulai Kuis" langsung aktif
+    validasiTombolMulai();
+    
     muatBankSoal();
   }
 
   muatBankSoal();
+  // Otomatis isi nama dari penyimpanan lokal jika pernah main sebelumnya
+  window.addEventListener("DOMContentLoaded", () => {
+    const namaTersimpan = localStorage.getItem("namaSiswaKuis");
+    if (namaTersimpan) {
+      document.getElementById("namaAnak").value = namaTersimpan;
+      validasiTombolMulai();
+    }
+  });
 </script>
 
 </body>
