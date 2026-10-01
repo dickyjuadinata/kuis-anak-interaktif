@@ -1,0 +1,21 @@
+{
+  "short_name": "KuisPintar",
+  "name": "Kuis Pintar SD Kelas 4",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3426/3426653.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3426/3426653.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#f0f8ff",
+  "theme_color": "#4caf50",
+  "display": "standalone",
+  "orientation": "portrait"
+}
