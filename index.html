@@ -174,7 +174,7 @@
   let soalSaatIni = null;
 
   let namaSiswa = "";
-  let totalSoal = 0;
+  let totalSoalDimainkan = 0;
   let jumlahBenar = 0;
   let jumlahSalah = 0;
   let soalSelesaiCount = 0;
@@ -292,7 +292,7 @@
     kumpulanSoal = acakArray(kumpulanSoal);
     antreanSoal = kumpulanSoal.slice(0, jumlahDiminta);
 
-    totalSoal = antreanSoal.length;
+    totalSoalDimainkan = antreanSoal.length;
     jumlahBenar = 0;
     jumlahSalah = 0;
     soalSelesaiCount = 0;
@@ -355,19 +355,19 @@
   }
 
   function updateStatsBar() {
-    const nilai = totalSoal > 0 ? Math.round((jumlahBenar / totalSoal) * 100) : 0;
-    document.getElementById("dispProgres").innerText = `${soalSelesaiCount}/${totalSoal}`;
+    const nilai = totalSoalDimainkan > 0 ? Math.round((jumlahBenar / totalSoalDimainkan) * 100) : 0;
+    document.getElementById("dispProgres").innerText = `${soalSelesaiCount}/${totalSoalDimainkan}`;
     document.getElementById("dispNilai").innerText = nilai;
   }
 
   function tampilkanLayarSelesai() {
-    const nilaiAkhir = Math.round((jumlahBenar / totalSoal) * 100);
+    const nilaiAkhir = Math.round((jumlahBenar / totalSoalDimainkan) * 100);
     document.getElementById("quizScreen").style.display = "none";
     document.getElementById("finishScreen").style.display = "block";
 
     document.getElementById("finishNama").innerText = namaSiswa;
     document.getElementById("finishNilai").innerText = nilaiAkhir;
-    document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoal} soal.`;
+    document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoalDimainkan} soal.`;
   }
 
   function ulangKuis() {
