@@ -171,22 +171,17 @@
 
       bankSoalUtama = [];
 
-      // Membaca semua baris tanpa terputus
-      for (let i = 0; i < rows.length; i++) {
+      // Loop mulai dari indeks 1 (Baris 2 di Spreadsheet)
+      for (let i = 1; i < rows.length; i++) {
         const c = rows[i].c;
         if (!c) continue;
 
-        // Ambil nilai teks dari sel kolom A, B, dan C
-        const valA = (c[0] && (c[0].v !== null && c[0].v !== undefined)) ? String(c[0].v).trim() : "";
-        const valB = (c[1] && (c[1].v !== null && c[1].v !== undefined)) ? String(c[1].v).trim() : "";
-        const valC = (c[2] && (c[2].v !== null && c[2].v !== undefined)) ? String(c[2].v).trim() : "";
+        // Ambil nilai teks dari sel kolom A, B, dan C secara aman
+        const valA = (c[0] && c[0].v !== null && c[0].v !== undefined) ? String(c[0].v).trim() : "";
+        const valB = (c[1] && c[1].v !== null && c[1].v !== undefined) ? String(c[1].v).trim() : "";
+        const valC = (c[2] && c[2].v !== null && c[2].v !== undefined) ? String(c[2].v).trim() : "";
 
-        // Abaikan baris header (misal jika A1 berisi "A (soal)" atau "soal")
-        if (valA.toLowerCase().includes("(soal)") || valA.toLowerCase() === "soal") {
-          continue;
-        }
-
-        // Masukkan soal yang valid
+        // Masukkan ke bank soal jika kolom A (Soal) tidak kosong
         if (valA !== "") {
           bankSoalUtama.push({
             soal: valA,
