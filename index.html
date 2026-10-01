@@ -85,8 +85,19 @@
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
   const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
-  let bankSoal = [];
+  let bankSoalUtama = []; // Menyimpan master bank soal dari Sheets
+  let antreanSoal = [];   // Menyimpan sisa soal yang belum dikeluarkannya
   let soalSaatIni = null;
+
+  // Fungsi mengacak urutan array (Fisher-Yates Shuffle)
+  function acakArray(array) {
+    let arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
   // Memuat bank soal dari Google Sheets
   async function muatBankSoal() {
@@ -94,14 +105,12 @@
       const response = await fetch(SHEET_URL);
       const text = await response.text();
       
-      // Mengambil JSON murni dari respon GViz API
       const jsonString = text.substring(47, text.length - 2);
       const data = JSON.parse(jsonString);
-      
       const rows = data.table.rows;
       
-      // .slice(1) digunakan untuk melewati baris pertama (header)
-      bankSoal = rows.slice(1).map(row => {
+      // Mengabaikan baris pertama (header)
+      bankSoalUtama = rows.slice(1).map(row => {
         const c = row.c;
         return {
           soal: c && c[0] && c[0].v ? c[0].v : "",
@@ -110,8 +119,10 @@
         };
       }).filter(item => item.soal !== "");
 
-      if (bankSoal.length > 0) {
+      if (bankSoalUtama.length > 0) {
         document.getElementById("btnKirim").disabled = false;
+        // Buat antrean acak pertama kali
+        antreanSoal = acakArray(bankSoalUtama);
         tampilkanSoalAcak();
       } else {
         document.getElementById("soalText").innerText = "Bank soal di Google Sheets masih kosong.";
@@ -122,12 +133,17 @@
     }
   }
 
-  // Menampilkan pertanyaan acak dari bank soal
+  // Menampilkan pertanyaan dari antrean tanpa pengulangan
   function tampilkanSoalAcak() {
-    if (bankSoal.length === 0) return;
+    if (bankSoalUtama.length === 0) return;
 
-    const randomIndex = Math.floor(Math.random() * bankSoal.length);
-    soalSaatIni = bankSoal[randomIndex];
+    // Jika semua soal dalam antrean sudah habis ditampilkan, acak ulang dari master
+    if (antreanSoal.length === 0) {
+      antreanSoal = acakArray(bankSoalUtama);
+    }
+
+    // Ambil (pop) 1 soal dari antrean sehingga tidak akan terulang lagi
+    soalSaatIni = antreanSoal.pop();
 
     document.getElementById("soalText").innerText = "Soal: " + soalSaatIni.soal;
     document.getElementById("jawabanAnak").value = "";
@@ -136,42 +152,33 @@
     document.getElementById("btnLanjut").style.display = "none";
   }
 
+  // Memeriksa jawaban berdasarkan kata kunci dan langkah matematika
   function periksaJawaban() {
-  const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
-  const resultBox = document.getElementById("resultBox");
+    const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
+    const resultBox = document.getElementById("resultBox");
 
-  if (!inputJawaban) {
-    alert("Tulis jawaban dan cara pengerjaannya terlebih dahulu ya!");
-    return;
+    if (!inputJawaban) {
+      alert("Tulis jawabanmu terlebih dahulu ya!");
+      return;
+    }
+
+    const keywordMatches = soalSaatIni.kataKunci.filter(keyword => inputJawaban.includes(keyword));
+    const isCorrect = keywordMatches.length > 0;
+
+    resultBox.style.display = "block";
+    if (isCorrect) {
+      resultBox.className = "result-box correct";
+      resultBox.innerHTML = `<strong>Hebat! Jawabanmu Benar! 🎉</strong><br><br>Pintar sekali, jawabanmu tepat dan sesuai konsep!`;
+    } else {
+      resultBox.className = "result-box incorrect";
+      resultBox.innerHTML = `<strong>Hampir Benar! 😊</strong><br><br>Tetap semangat belajar ya!<br><br><em>Penjabaran / Kunci Jawaban:</em><br>${soalSaatIni.kunciJawaban}`;
+    }
+
+    document.getElementById("btnKirim").style.display = "none";
+    document.getElementById("btnLanjut").style.display = "block";
   }
 
-  // Menghitung berapa banyak kata kunci/angka kunci yang ditemukan pada jawaban anak
-  const keywordMatches = soalSaatIni.kataKunci.filter(keyword => inputJawaban.includes(keyword));
-  const matchRatio = keywordMatches.length / soalSaatIni.kataKunci.length;
-
-  resultBox.style.display = "block";
-
-  // Jika semua kata kunci (langkah + hasil akhir) ditemukan
-  if (matchRatio === 1) {
-    resultBox.className = "result-box correct";
-    resultBox.innerHTML = `<strong>Luar Biasa! Jawaban & Langkahmu Sangat Lengkap! 🎉</strong><br><br>Pintar sekali, jalannya sudah tepat!`;
-  } 
-  // Jika hanya sebagian kata kunci ditemukan (misal: hanya jawab angka tanpa cara)
-  else if (matchRatio > 0) {
-    resultBox.className = "result-box correct";
-    resultBox.innerHTML = `<strong>Hampir Sempurna! 👍</strong><br><br>Jawabanmu sudah mendekati benar, tapi jangan lupa tuliskan jalannya secara lengkap ya!<br><br><em>Penjabaran Lengkap:</em><br>${soalSaatIni.kunciJawaban}`;
-  } 
-  // Jika tidak ada kata kunci yang cocok
-  else {
-    resultBox.className = "result-box incorrect";
-    resultBox.innerHTML = `<strong>Yuk, Coba Lagi! 😊</strong><br><br>Perhatikan langkah pengerjaannya di bawah ini ya:<br><br><em>Penjabaran Lengkap:</em><br>${soalSaatIni.kunciJawaban}`;
-  }
-
-  document.getElementById("btnKirim").style.display = "none";
-  document.getElementById("btnLanjut").style.display = "block";
-}
-
-  // Jalankan saat halaman dibuka
+  // Jalankan saat halaman dimuat
   muatBankSoal();
 </script>
 
