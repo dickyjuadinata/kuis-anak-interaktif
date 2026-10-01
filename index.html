@@ -377,26 +377,24 @@
     document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoalDimainkan} soal.`;
 
     // Kirim Hasil ke Google Spreadsheet
-    if (WEB_APP_URL && WEB_APP_URL !== "https://script.google.com/macros/s/AKfycbweQZc6nhgE-I4vBwgCvHwCUgLAQkp0YhJNrBRKviyFqKoQdWkoOUZ1chzhw8vwAKAyGg/exec") {
+    if (WEB_APP_URL && WEB_APP_URL !== "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI") {
       const statusElem = document.getElementById("statusSimpan");
       statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
       
-      const payload = {
-        waktu: new Date().toLocaleString("id-ID"),
-        nama: namaSiswa,
-        mapel: mapelTerpilihNama,
-        totalSoal: totalSoalDimainkan,
-        jumlahBenar: jumlahBenar,
-        jumlahSalah: jumlahSalah,
-        nilaiAkhir: nilaiAkhir
-      };
+      const formData = new FormData();
+      formData.append("waktu", new Date().toLocaleString("id-ID"));
+      formData.append("nama", namaSiswa);
+      formData.append("mapel", mapelTerpilihNama);
+      formData.append("totalSoal", totalSoalDimainkan);
+      formData.append("jumlahBenar", jumlahBenar);
+      formData.append("jumlahSalah", jumlahSalah);
+      formData.append("nilaiAkhir", nilaiAkhir);
 
       try {
         await fetch(WEB_APP_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: formData
         });
         statusElem.innerText = "✅ Nilai berhasil disimpan!";
       } catch (err) {
