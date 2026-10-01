@@ -47,9 +47,7 @@
       font-size: 15px;
       background-color: #fff;
     }
-    select {
-      cursor: pointer;
-    }
+    select { cursor: pointer; }
     textarea { height: 80px; }
 
     .score-bar {
@@ -102,6 +100,7 @@
     .incorrect { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
     
     #quizScreen, #finishScreen { display: none; }
+    .saving-text { font-size: 13px; color: #666; font-style: italic; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -161,6 +160,7 @@
     <p style="font-size: 18px;">Nilai Akhirmu:</p>
     <h1 style="font-size: 48px; color: #2e7d32; margin: 10px 0;" id="finishNilai">0</h1>
     <p id="finishDetail" style="color: #555;"></p>
+    <p id="statusSimpan" class="saving-text">Menyimpan nilai ke Google Sheets...</p>
     <button class="btn-restart" onclick="ulangKuis()">Main Lagi 🔄</button>
   </div>
 </div>
@@ -168,12 +168,16 @@
 <script>
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
   const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&headers=1`;
+  
+  // Tempel URL Web App dari Apps Script Anda di sini:
+  const WEB_APP_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
 
   let bankSoalUtama = [];
   let antreanSoal = [];
   let soalSaatIni = null;
 
   let namaSiswa = "";
+  let mapelTerpilihNama = "";
   let totalSoalDimainkan = 0;
   let jumlahBenar = 0;
   let jumlahSalah = 0;
@@ -282,7 +286,10 @@
     namaSiswa = document.getElementById("namaAnak").value.trim();
     if (!namaSiswa) return;
 
-    const mapelTerpilih = document.getElementById("selectMapel").value;
+    const selectMapelElem = document.getElementById("selectMapel");
+    const mapelTerpilih = selectMapelElem.value;
+    mapelTerpilihNama = selectMapelElem.options[selectMapelElem.selectedIndex].text;
+
     const jumlahDiminta = parseInt(document.getElementById("selectJumlah").value);
 
     let kumpulanSoal = mapelTerpilih === "semua"
@@ -360,7 +367,7 @@
     document.getElementById("dispNilai").innerText = nilai;
   }
 
-  function tampilkanLayarSelesai() {
+  async function tampilkanLayarSelesai() {
     const nilaiAkhir = Math.round((jumlahBenar / totalSoalDimainkan) * 100);
     document.getElementById("quizScreen").style.display = "none";
     document.getElementById("finishScreen").style.display = "block";
@@ -368,6 +375,37 @@
     document.getElementById("finishNama").innerText = namaSiswa;
     document.getElementById("finishNilai").innerText = nilaiAkhir;
     document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoalDimainkan} soal.`;
+
+    // Kirim Hasil ke Google Spreadsheet
+    if (WEB_APP_URL && WEB_APP_URL !== "https://script.google.com/macros/s/AKfycbweQZc6nhgE-I4vBwgCvHwCUgLAQkp0YhJNrBRKviyFqKoQdWkoOUZ1chzhw8vwAKAyGg/exec") {
+      const statusElem = document.getElementById("statusSimpan");
+      statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
+      
+      const payload = {
+        waktu: new Date().toLocaleString("id-ID"),
+        nama: namaSiswa,
+        mapel: mapelTerpilihNama,
+        totalSoal: totalSoalDimainkan,
+        jumlahBenar: jumlahBenar,
+        jumlahSalah: jumlahSalah,
+        nilaiAkhir: nilaiAkhir
+      };
+
+      try {
+        await fetch(WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        statusElem.innerText = "✅ Nilai berhasil disimpan!";
+      } catch (err) {
+        console.error("Gagal menyimpan hasil:", err);
+        statusElem.innerText = "⚠️ Gagal menyimpan nilai otomatis.";
+      }
+    } else {
+      document.getElementById("statusSimpan").innerText = "";
+    }
   }
 
   function ulangKuis() {
