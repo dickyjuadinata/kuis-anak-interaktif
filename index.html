@@ -99,12 +99,14 @@
       const data = JSON.parse(jsonString);
       
       const rows = data.table.rows;
-      bankSoal = rows.map(row => {
+      
+      // .slice(1) digunakan untuk melewati baris pertama (header)
+      bankSoal = rows.slice(1).map(row => {
         const c = row.c;
         return {
-          soal: c[0] ? c[0].v : "",
-          kataKunci: c[1] ? c[1].v.split(",").map(k => k.trim().toLowerCase()) : [],
-          kunciJawaban: c[2] ? c[2].v : ""
+          soal: c && c[0] && c[0].v ? c[0].v : "",
+          kataKunci: c && c[1] && c[1].v ? c[1].v.toString().split(",").map(k => k.trim().toLowerCase()) : [],
+          kunciJawaban: c && c[2] && c[2].v ? c[2].v : ""
         };
       }).filter(item => item.soal !== "");
 
