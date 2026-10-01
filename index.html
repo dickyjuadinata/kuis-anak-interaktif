@@ -381,20 +381,24 @@
       const statusElem = document.getElementById("statusSimpan");
       statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
       
-      const formData = new FormData();
-      formData.append("waktu", new Date().toLocaleString("id-ID"));
-      formData.append("nama", namaSiswa);
-      formData.append("mapel", mapelTerpilihNama);
-      formData.append("totalSoal", totalSoalDimainkan);
-      formData.append("jumlahBenar", jumlahBenar);
-      formData.append("jumlahSalah", jumlahSalah);
-      formData.append("nilaiAkhir", nilaiAkhir);
+      const payload = new URLSearchParams({
+        waktu: new Date().toLocaleString("id-ID"),
+        nama: namaSiswa,
+        mapel: mapelTerpilihNama,
+        totalSoal: totalSoalDimainkan,
+        jumlahBenar: jumlahBenar,
+        jumlahSalah: jumlahSalah,
+        nilaiAkhir: nilaiAkhir
+      });
 
       try {
         await fetch(WEB_APP_URL, {
           method: "POST",
           mode: "no-cors",
-          body: formData
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: payload.toString()
         });
         statusElem.innerText = "✅ Nilai berhasil disimpan!";
       } catch (err) {
