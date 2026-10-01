@@ -131,7 +131,8 @@
 
 <script>
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
-  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
+  // Menambahkan headers=1 agar Google Sheets tahu bahwa baris 1 adalah header tunggal
+  const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&headers=1`;
 
   let bankSoalUtama = [];
   let antreanSoal = [];
@@ -153,7 +154,7 @@
     return arr;
   }
 
-  // Fungsi konversi aman sel Google Sheets ke String
+  // Fungsi konversi aman isi sel ke String
   function ambilTeksSel(cell) {
     if (!cell) return "";
     if (cell.f !== undefined && cell.f !== null) return String(cell.f).trim();
@@ -167,7 +168,7 @@
     document.getElementById("btnMulai").disabled = nama.length === 0 || bankSoalUtama.length === 0;
   });
 
-  // Memuat bank soal secara menyeluruh dari Google Sheets
+  // Memuat bank soal secara lengkap dari Google Sheets
   async function muatBankSoal() {
     try {
       const response = await fetch(SHEET_URL);
@@ -178,8 +179,7 @@
 
       bankSoalUtama = [];
 
-      // Membaca dari indeks 0 karena Google Sheets gViz API secara otomatis
-      // menjadikan Baris 1 sebagai nama kolom (header)
+      // Membaca seluruh data baris yang dikembalikan oleh API
       for (let i = 0; i < rows.length; i++) {
         const c = rows[i].c;
         if (!c) continue;
@@ -188,12 +188,7 @@
         const valB = ambilTeksSel(c[1]);
         const valC = ambilTeksSel(c[2]);
 
-        // Abaikan jika baris tersebut memuat nama header
-        if (valA.toLowerCase() === "a (soal)" || valA.toLowerCase() === "soal") {
-          continue;
-        }
-
-        // Simpan hanya jika kolom soal berisi teks
+        // Simpan seluruh soal yang berisi teks
         if (valA !== "") {
           bankSoalUtama.push({
             soal: valA,
@@ -203,7 +198,7 @@
         }
       }
 
-      console.log("Total Soal Berhasil Dimuat:", bankSoalUtama.length);
+      console.log("Total Soal Dimuat:", bankSoalUtama.length);
 
       if (bankSoalUtama.length > 0) {
         const inputNama = document.getElementById("namaAnak").value.trim();
@@ -231,12 +226,12 @@
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("quizScreen").style.display = "block";
 
-    // Acak seluruh kumpulan soal IPAS, B. Inggris, & Matematika secara merata
+    // Acak seluruh soal
     antreanSoal = acakArray(bankSoalUtama);
     tampilkanSoalBerikutnya();
   }
 
-  // Tampilkan Soal Berikutnya dari Antrean
+  // Tampilkan Soal Berikutnya
   function tampilkanSoalBerikutnya() {
     if (antreanSoal.length === 0) {
       tampilkanLayarSelesai();
@@ -315,7 +310,7 @@
     muatBankSoal();
   }
 
-  // Jalankan pemuatan soal saat halaman pertama kali dibuka
+  // Jalankan pemuatan soal saat aplikasi dibuka
   muatBankSoal();
 </script>
 
