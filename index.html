@@ -81,15 +81,15 @@
 </div>
 
 <script>
-  // MASUKKAN ID GOOGLE SHEETS ANDA DI SINI
+  // ID GOOGLE SHEETS ANDA
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
   const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
-  let bankSoalUtama = []; // Menyimpan master bank soal dari Sheets
-  let antreanSoal = [];   // Menyimpan sisa soal yang belum dikeluarkannya
+  let bankSoalUtama = []; 
+  let antreanSoal = [];   
   let soalSaatIni = null;
 
-  // Fungsi mengacak urutan array (Fisher-Yates Shuffle)
+  // Algoritma Pengacak Urutan (Fisher-Yates Shuffle)
   function acakArray(array) {
     let arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -99,33 +99,46 @@
     return arr;
   }
 
-  // Memuat bank soal dari Google Sheets
+  // Memuat seluruh bank soal dari Google Sheets
   async function muatBankSoal() {
     try {
       const response = await fetch(SHEET_URL);
       const text = await response.text();
       
+      // Ambil respon JSON murni
       const jsonString = text.substring(47, text.length - 2);
       const data = JSON.parse(jsonString);
       const rows = data.table.rows;
       
-      // Mengabaikan baris pertama (header)
-      bankSoalUtama = rows.slice(1).map(row => {
-        const c = row.c;
-        return {
-          soal: c && c[0] && c[0].v ? c[0].v : "",
-          kataKunci: c && c[1] && c[1].v ? c[1].v.toString().split(",").map(k => k.trim().toLowerCase()) : [],
-          kunciJawaban: c && c[2] && c[2].v ? c[2].v : ""
-        };
-      }).filter(item => item.soal !== "");
+      bankSoalUtama = [];
+
+      // Loop semua baris (mulai dari indeks 1 untuk lewati header)
+      for (let i = 1; i < rows.length; i++) {
+        const c = rows[i].c;
+        if (!c) continue;
+
+        // Ambil nilai kolom A, B, C secara aman
+        const teksSoal = (c[0] && c[0].v !== null) ? String(c[0].v).trim() : "";
+        const teksKunci = (c[1] && c[1].v !== null) ? String(c[1].v).trim() : "";
+        const teksJawaban = (c[2] && c[2].v !== null) ? String(c[2].v).trim() : "";
+
+        // Hanya masukkan jika kolom Soal tidak kosong
+        if (teksSoal !== "") {
+          bankSoalUtama.push({
+            soal: teksSoal,
+            kataKunci: teksKunci ? teksKunci.split(",").map(k => k.trim().toLowerCase()) : [],
+            kunciJawaban: teksJawaban
+          });
+        }
+      }
 
       if (bankSoalUtama.length > 0) {
         document.getElementById("btnKirim").disabled = false;
-        // Buat antrean acak pertama kali
+        // Acak seluruh soal dari IPAS, B. Inggris, & Matematika
         antreanSoal = acakArray(bankSoalUtama);
         tampilkanSoalAcak();
       } else {
-        document.getElementById("soalText").innerText = "Bank soal di Google Sheets masih kosong.";
+        document.getElementById("soalText").innerText = "Bank soal di Google Sheets kosong atau format tidak sesuai.";
       }
     } catch (error) {
       document.getElementById("soalText").innerText = "Gagal memuat bank soal dari Google Sheets.";
@@ -133,16 +146,16 @@
     }
   }
 
-  // Menampilkan pertanyaan dari antrean tanpa pengulangan
+  // Menampilkan pertanyaan dari antrean tanpa berulang
   function tampilkanSoalAcak() {
     if (bankSoalUtama.length === 0) return;
 
-    // Jika semua soal dalam antrean sudah habis ditampilkan, acak ulang dari master
+    // Jika antrean habis, acak ulang seluruh bank soal
     if (antreanSoal.length === 0) {
       antreanSoal = acakArray(bankSoalUtama);
     }
 
-    // Ambil (pop) 1 soal dari antrean sehingga tidak akan terulang lagi
+    // Ambil 1 soal dari antrean
     soalSaatIni = antreanSoal.pop();
 
     document.getElementById("soalText").innerText = "Soal: " + soalSaatIni.soal;
@@ -152,7 +165,7 @@
     document.getElementById("btnLanjut").style.display = "none";
   }
 
-  // Memeriksa jawaban berdasarkan kata kunci dan langkah matematika
+  // Penilaian berbasis kata kunci secara lokal
   function periksaJawaban() {
     const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
     const resultBox = document.getElementById("resultBox");
@@ -162,13 +175,13 @@
       return;
     }
 
-    const keywordMatches = soalSaatIni.kataKunci.filter(keyword => inputJawaban.includes(keyword));
-    const isCorrect = keywordMatches.length > 0;
+    // Cek kecocokan kata kunci
+    const isCorrect = soalSaatIni.kataKunci.some(keyword => inputJawaban.includes(keyword));
 
     resultBox.style.display = "block";
     if (isCorrect) {
       resultBox.className = "result-box correct";
-      resultBox.innerHTML = `<strong>Hebat! Jawabanmu Benar! 🎉</strong><br><br>Pintar sekali, jawabanmu tepat dan sesuai konsep!`;
+      resultBox.innerHTML = `<strong>Hebat! Jawabanmu Benar! 🎉</strong><br><br>Pintar sekali, jawabanmu tepat!`;
     } else {
       resultBox.className = "result-box incorrect";
       resultBox.innerHTML = `<strong>Hampir Benar! 😊</strong><br><br>Tetap semangat belajar ya!<br><br><em>Penjabaran / Kunci Jawaban:</em><br>${soalSaatIni.kunciJawaban}`;
@@ -178,7 +191,7 @@
     document.getElementById("btnLanjut").style.display = "block";
   }
 
-  // Jalankan saat halaman dimuat
+  // Jalankan saat halaman dibuka
   muatBankSoal();
 </script>
 
