@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kuis Sains Anak</title>
+  <title>Kuis Pintar Kelas 4 SD</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -13,6 +13,8 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      padding: 15px;
+      box-sizing: border-box;
     }
     .card {
       background: white;
@@ -22,7 +24,21 @@
       max-width: 500px;
       width: 100%;
     }
-    h1 { color: #2c3e50; font-size: 24px; text-align: center; }
+    h1 { color: #2c3e50; font-size: 24px; text-align: center; margin-top: 0; }
+    
+    /* Stats Bar */
+    .score-bar {
+      display: flex;
+      justify-content: space-between;
+      background: #f1f8e9;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #33691e;
+    }
+
     .question-box {
       background: #e1f5fe;
       padding: 15px;
@@ -31,16 +47,18 @@
       font-weight: bold;
       color: #0277bd;
     }
-    textarea {
+    
+    input[type="text"], textarea {
       width: 100%;
-      height: 80px;
-      padding: 10px;
+      padding: 12px;
       border: 2px solid #b0bec5;
       border-radius: 8px;
       box-sizing: border-box;
-      font-size: 14px;
+      font-size: 15px;
       margin-bottom: 15px;
     }
+    textarea { height: 80px; }
+
     button {
       width: 100%;
       background-color: #4caf50;
@@ -55,6 +73,8 @@
     }
     button:disabled { background-color: #9e9e9e; cursor: not-allowed; }
     button.btn-next { background-color: #0288d1; }
+    button.btn-restart { background-color: #ff9800; }
+
     .result-box {
       margin-top: 15px;
       padding: 15px;
@@ -63,33 +83,67 @@
     }
     .correct { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
     .incorrect { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+    
+    /* Screen Display Controls */
+    #quizScreen, #finishScreen { display: none; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>Kuis Sains Anak 🌟</h1>
-  
-  <div class="question-box" id="soalText">Memuat soal dari Google Sheets...</div>
+  <h1>Kuis Pintar SD Kelas 4 🌟</h1>
 
-  <textarea id="jawabanAnak" placeholder="Tulis jawabanmu di sini..."></textarea>
-  
-  <button id="btnKirim" onclick="periksaJawaban()" disabled>Kirim Jawaban</button>
-  <button id="btnLanjut" class="btn-next" onclick="tampilkanSoalAcak()" style="display: none;">Soal Berikutnya ➡️</button>
+  <!-- LAYAR 1: MASUKKAN NAMA -->
+  <div id="startScreen">
+    <p style="text-align: center; color: #555;">Selamat datang! Silakan masukkan namamu sebelum mulai kuis:</p>
+    <input type="text" id="namaAnak" placeholder="Ketik nama lengkapmu di sini..." autocomplete="off">
+    <button id="btnMulai" onclick="mulaiKuis()" disabled>Mulai Kuis 🚀</button>
+  </div>
 
-  <div id="resultBox" class="result-box"></div>
+  <!-- LAYAR 2: TAMPILAN SOAL & PENILAIAN -->
+  <div id="quizScreen">
+    <div class="score-bar">
+      <span>👤 <span id="dispNama">-</span></span>
+      <span>Soal: <span id="dispProgres">0/0</span></span>
+      <span>Nilai: <span id="dispNilai">0</span></span>
+    </div>
+
+    <div class="question-box" id="soalText">Memuat soal...</div>
+
+    <textarea id="jawabanAnak" placeholder="Tulis jawabanmu di sini..."></textarea>
+
+    <button id="btnKirim" onclick="periksaJawaban()">Kirim Jawaban</button>
+    <button id="btnLanjut" class="btn-next" onclick="tampilkanSoalBerikutnya()" style="display: none;">Soal Berikutnya ➡️</button>
+
+    <div id="resultBox" class="result-box"></div>
+  </div>
+
+  <!-- LAYAR 3: HASIL AKHIR -->
+  <div id="finishScreen" style="text-align: center;">
+    <h2>Selesai! 🎉</h2>
+    <p>Hebat sekali, <strong id="finishNama"></strong>!</p>
+    <p style="font-size: 18px;">Nilai Akhirmu:</p>
+    <h1 style="font-size: 48px; color: #2e7d32; margin: 10px 0;" id="finishNilai">0</h1>
+    <p id="finishDetail" style="color: #555;"></p>
+    <button class="btn-restart" onclick="ulangKuis()">Main Lagi 🔄</button>
+  </div>
 </div>
 
 <script>
-  // ID GOOGLE SHEETS ANDA
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
   const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
-  let bankSoalUtama = []; 
-  let antreanSoal = [];   
+  let bankSoalUtama = [];
+  let antreanSoal = [];
   let soalSaatIni = null;
 
-  // Algoritma Pengacak Urutan (Fisher-Yates Shuffle)
+  let namaSiswa = "";
+  let totalSoal = 0;
+  let jumlahBenar = 0;
+  let jumlahSalah = 0;
+  let soalSelesaiCount = 0;
+
+  // Fungsi mengacak urutan array (Fisher-Yates Shuffle)
   function acakArray(array) {
     let arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -99,30 +153,30 @@
     return arr;
   }
 
-  // Memuat seluruh bank soal dari Google Sheets
+  // Active validation input nama
+  document.getElementById("namaAnak").addEventListener("input", function() {
+    const nama = this.value.trim();
+    document.getElementById("btnMulai").disabled = nama.length === 0 || bankSoalUtama.length === 0;
+  });
+
+  // Memuat bank soal dari Google Sheets
   async function muatBankSoal() {
     try {
       const response = await fetch(SHEET_URL);
       const text = await response.text();
-      
-      // Ambil respon JSON murni
       const jsonString = text.substring(47, text.length - 2);
       const data = JSON.parse(jsonString);
       const rows = data.table.rows;
-      
-      bankSoalUtama = [];
 
-      // Loop semua baris (mulai dari indeks 1 untuk lewati header)
+      bankSoalUtama = [];
       for (let i = 1; i < rows.length; i++) {
         const c = rows[i].c;
         if (!c) continue;
 
-        // Ambil nilai kolom A, B, C secara aman
         const teksSoal = (c[0] && c[0].v !== null) ? String(c[0].v).trim() : "";
         const teksKunci = (c[1] && c[1].v !== null) ? String(c[1].v).trim() : "";
         const teksJawaban = (c[2] && c[2].v !== null) ? String(c[2].v).trim() : "";
 
-        // Hanya masukkan jika kolom Soal tidak kosong
         if (teksSoal !== "") {
           bankSoalUtama.push({
             soal: teksSoal,
@@ -133,39 +187,55 @@
       }
 
       if (bankSoalUtama.length > 0) {
-        document.getElementById("btnKirim").disabled = false;
-        // Acak seluruh soal dari IPAS, B. Inggris, & Matematika
-        antreanSoal = acakArray(bankSoalUtama);
-        tampilkanSoalAcak();
+        const inputNama = document.getElementById("namaAnak").value.trim();
+        if (inputNama) document.getElementById("btnMulai").disabled = false;
       } else {
-        document.getElementById("soalText").innerText = "Bank soal di Google Sheets kosong atau format tidak sesuai.";
+        alert("Bank soal di Google Sheets kosong.");
       }
     } catch (error) {
-      document.getElementById("soalText").innerText = "Gagal memuat bank soal dari Google Sheets.";
       console.error(error);
+      alert("Gagal memuat bank soal dari Google Sheets.");
     }
   }
 
-  // Menampilkan pertanyaan dari antrean tanpa berulang
-  function tampilkanSoalAcak() {
-    if (bankSoalUtama.length === 0) return;
+  // Mulai kuis setelah nama diisi
+  function mulaiKuis() {
+    namaSiswa = document.getElementById("namaAnak").value.trim();
+    if (!namaSiswa) return;
 
-    // Jika antrean habis, acak ulang seluruh bank soal
+    totalSoal = bankSoalUtama.length;
+    jumlahBenar = 0;
+    jumlahSalah = 0;
+    soalSelesaiCount = 0;
+
+    document.getElementById("dispNama").innerText = namaSiswa;
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+
+    antreanSoal = acakArray(bankSoalUtama);
+    tampilkanSoalBerikutnya();
+  }
+
+  // Tampilkan soal acak berikutnya
+  function tampilkanSoalBerikutnya() {
     if (antreanSoal.length === 0) {
-      antreanSoal = acakArray(bankSoalUtama);
+      tampilkanLayarSelesai();
+      return;
     }
 
-    // Ambil 1 soal dari antrean
     soalSaatIni = antreanSoal.pop();
+    soalSelesaiCount++;
 
-    document.getElementById("soalText").innerText = "Soal: " + soalSaatIni.soal;
+    updateStatsBar();
+
+    document.getElementById("soalText").innerText = "Soal " + soalSelesaiCount + ": " + soalSaatIni.soal;
     document.getElementById("jawabanAnak").value = "";
     document.getElementById("resultBox").style.display = "none";
     document.getElementById("btnKirim").style.display = "block";
     document.getElementById("btnLanjut").style.display = "none";
   }
 
-  // Penilaian berbasis kata kunci secara lokal
+  // Memeriksa jawaban dan hitung skor
   function periksaJawaban() {
     const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
     const resultBox = document.getElementById("resultBox");
@@ -175,8 +245,15 @@
       return;
     }
 
-    // Cek kecocokan kata kunci
     const isCorrect = soalSaatIni.kataKunci.some(keyword => inputJawaban.includes(keyword));
+
+    if (isCorrect) {
+      jumlahBenar++;
+    } else {
+      jumlahSalah++;
+    }
+
+    updateStatsBar();
 
     resultBox.style.display = "block";
     if (isCorrect) {
@@ -184,14 +261,41 @@
       resultBox.innerHTML = `<strong>Hebat! Jawabanmu Benar! 🎉</strong><br><br>Pintar sekali, jawabanmu tepat!`;
     } else {
       resultBox.className = "result-box incorrect";
-      resultBox.innerHTML = `<strong>Hampir Benar! 😊</strong><br><br>Tetap semangat belajar ya!<br><br><em>Penjabaran / Kunci Jawaban:</em><br>${soalSaatIni.kunciJawaban}`;
+      resultBox.innerHTML = `<strong>Hampir Benar! 😊</strong><br><br>Tetap semangat!<br><br><em>Kunci Jawaban:</em><br>${soalSaatIni.kunciJawaban}`;
     }
 
     document.getElementById("btnKirim").style.display = "none";
     document.getElementById("btnLanjut").style.display = "block";
   }
 
-  // Jalankan saat halaman dibuka
+  // Update informasi skor & nilai
+  function updateStatsBar() {
+    const nilai = totalSoal > 0 ? Math.round((jumlahBenar / totalSoal) * 100) : 0;
+    document.getElementById("dispProgres").innerText = `${soalSelesaiCount}/${totalSoal}`;
+    document.getElementById("dispNilai").innerText = nilai;
+  }
+
+  // Layar Hasil Akhir
+  function tampilkanLayarSelesai() {
+    const nilaiAkhir = Math.round((jumlahBenar / totalSoal) * 100);
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("finishScreen").style.display = "block";
+
+    document.getElementById("finishNama").innerText = namaSiswa;
+    document.getElementById("finishNilai").innerText = nilaiAkhir;
+    document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoal} soal.`;
+  }
+
+  // Ulang kuis dari awal
+  function ulangKuis() {
+    document.getElementById("finishScreen").style.display = "none";
+    document.getElementById("startScreen").style.display = "block";
+    document.getElementById("namaAnak").value = "";
+    document.getElementById("btnMulai").disabled = true;
+    muatBankSoal();
+  }
+
+  // Jalankan muat soal saat halaman pertama kali dibuka
   muatBankSoal();
 </script>
 
