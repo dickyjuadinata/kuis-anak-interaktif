@@ -136,31 +136,40 @@
     document.getElementById("btnLanjut").style.display = "none";
   }
 
-  // Penilaian berbasis kata kunci secara lokal
   function periksaJawaban() {
-    const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
-    const resultBox = document.getElementById("resultBox");
+  const inputJawaban = document.getElementById("jawabanAnak").value.trim().toLowerCase();
+  const resultBox = document.getElementById("resultBox");
 
-    if (!inputJawaban) {
-      alert("Tulis jawabanmu terlebih dahulu ya!");
-      return;
-    }
-
-    // Memeriksa apakah ada salah satu kata kunci di dalam jawaban anak
-    const isCorrect = soalSaatIni.kataKunci.some(keyword => inputJawaban.includes(keyword));
-
-    resultBox.style.display = "block";
-    if (isCorrect) {
-      resultBox.className = "result-box correct";
-      resultBox.innerHTML = `<strong>Hebat! Jawabanmu Benar! 🎉</strong><br><br>Pintar sekali, jawabanmu tepat dan sesuai konsep!`;
-    } else {
-      resultBox.className = "result-box incorrect";
-      resultBox.innerHTML = `<strong>Hampir Benar! 😊</strong><br><br>Tetap semangat belajar ya!<br><br><em>Kunci Jawaban: ${soalSaatIni.kunciJawaban}</em>`;
-    }
-
-    document.getElementById("btnKirim").style.display = "none";
-    document.getElementById("btnLanjut").style.display = "block";
+  if (!inputJawaban) {
+    alert("Tulis jawaban dan cara pengerjaannya terlebih dahulu ya!");
+    return;
   }
+
+  // Menghitung berapa banyak kata kunci/angka kunci yang ditemukan pada jawaban anak
+  const keywordMatches = soalSaatIni.kataKunci.filter(keyword => inputJawaban.includes(keyword));
+  const matchRatio = keywordMatches.length / soalSaatIni.kataKunci.length;
+
+  resultBox.style.display = "block";
+
+  // Jika semua kata kunci (langkah + hasil akhir) ditemukan
+  if (matchRatio === 1) {
+    resultBox.className = "result-box correct";
+    resultBox.innerHTML = `<strong>Luar Biasa! Jawaban & Langkahmu Sangat Lengkap! 🎉</strong><br><br>Pintar sekali, jalannya sudah tepat!`;
+  } 
+  // Jika hanya sebagian kata kunci ditemukan (misal: hanya jawab angka tanpa cara)
+  else if (matchRatio > 0) {
+    resultBox.className = "result-box correct";
+    resultBox.innerHTML = `<strong>Hampir Sempurna! 👍</strong><br><br>Jawabanmu sudah mendekati benar, tapi jangan lupa tuliskan jalannya secara lengkap ya!<br><br><em>Penjabaran Lengkap:</em><br>${soalSaatIni.kunciJawaban}`;
+  } 
+  // Jika tidak ada kata kunci yang cocok
+  else {
+    resultBox.className = "result-box incorrect";
+    resultBox.innerHTML = `<strong>Yuk, Coba Lagi! 😊</strong><br><br>Perhatikan langkah pengerjaannya di bawah ini ya:<br><br><em>Penjabaran Lengkap:</em><br>${soalSaatIni.kunciJawaban}`;
+  }
+
+  document.getElementById("btnKirim").style.display = "none";
+  document.getElementById("btnLanjut").style.display = "block";
+}
 
   // Jalankan saat halaman dibuka
   muatBankSoal();
