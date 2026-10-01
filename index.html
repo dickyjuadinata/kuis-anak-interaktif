@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3426/3426653.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kuis Pintar Kelas 4 SD</title>
@@ -429,6 +432,14 @@
       validasiTombolMulai();
     }
   });
+  // Registrasi PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => console.log('PWA Service Worker terdaftar:', reg.scope))
+      .catch((err) => console.error('PWA Registrasi gagal:', err));
+  });
+}
 </script>
 
 </body>
