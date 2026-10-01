@@ -128,7 +128,6 @@
     <div class="form-group">
       <label for="selectJumlah">Pilih Jumlah Soal</label>
       <select id="selectJumlah">
-        <!-- Opsi diisi otomatis berdasarkan ketersediaan soal -->
       </select>
     </div>
 
@@ -169,8 +168,8 @@
   const SPREADSHEET_ID = "1OEc5Hin9AATboY0Hl9RnYd7E8QemA89-QchTzDW0Jp4"; 
   const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&headers=1`;
   
-  // Tempel URL Web App dari Apps Script Anda di sini:
-  const WEB_APP_URL = "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI";
+  // URL Apps Script dari pengguna
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbweQZc6nhgE-I4vBwgCvHwCUgLAQkp0YhJNrBRKviyFqKoQdWkoOUZ1chzhw8vwAKAyGg/exec";
 
   let bankSoalUtama = [];
   let antreanSoal = [];
@@ -376,36 +375,33 @@
     document.getElementById("finishNilai").innerText = nilaiAkhir;
     document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoalDimainkan} soal.`;
 
-    if (WEB_APP_URL && WEB_APP_URL !== "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI") {
-      const statusElem = document.getElementById("statusSimpan");
-      statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
-      
-      // Mengirimkan parameter URL-encoded sederhana
-      const bodyData = new URLSearchParams();
-      bodyData.append("waktu", new Date().toLocaleString("id-ID"));
-      bodyData.append("nama", namaSiswa);
-      bodyData.append("mapel", mapelTerpilihNama);
-      bodyData.append("totalSoal", totalSoalDimainkan);
-      bodyData.append("jumlahBenar", jumlahBenar);
-      bodyData.append("jumlahSalah", jumlahSalah);
-      bodyData.append("nilaiAkhir", nilaiAkhir);
+    const statusElem = document.getElementById("statusSimpan");
+    statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
+    
+    // Pengiriman data menggunakan URLSearchParams (Compatible dengan e.parameter Google Apps Script)
+    const params = new URLSearchParams({
+      waktu: new Date().toLocaleString("id-ID"),
+      nama: namaSiswa,
+      mapel: mapelTerpilihNama,
+      totalSoal: totalSoalDimainkan,
+      jumlahBenar: jumlahBenar,
+      jumlahSalah: jumlahSalah,
+      nilaiAkhir: nilaiAkhir
+    });
 
-      try {
-        await fetch(WEB_APP_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: bodyData.toString()
-        });
-        statusElem.innerText = "✅ Nilai berhasil disimpan!";
-      } catch (err) {
-        console.error("Gagal menyimpan hasil:", err);
-        statusElem.innerText = "⚠️ Gagal menyimpan nilai otomatis.";
-      }
-    } else {
-      document.getElementById("statusSimpan").innerText = "";
+    try {
+      await fetch(WEB_APP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString()
+      });
+      statusElem.innerText = "✅ Nilai berhasil disimpan!";
+    } catch (err) {
+      console.error("Gagal menyimpan hasil:", err);
+      statusElem.innerText = "⚠️ Gagal menyimpan nilai otomatis.";
     }
   }
 
