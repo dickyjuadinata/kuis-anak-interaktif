@@ -26,7 +26,6 @@
     }
     h1 { color: #2c3e50; font-size: 24px; text-align: center; margin-top: 0; }
     
-    /* Stats Bar */
     .score-bar {
       display: flex;
       justify-content: space-between;
@@ -144,7 +143,7 @@
   let jumlahSalah = 0;
   let soalSelesaiCount = 0;
 
-  // Fungsi Pengacak Array (Fisher-Yates Shuffle)
+  // Fungsi pengacak urutan (Fisher-Yates Shuffle)
   function acakArray(array) {
     let arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -154,13 +153,21 @@
     return arr;
   }
 
+  // Fungsi konversi aman sel Google Sheets ke String
+  function ambilTeksSel(cell) {
+    if (!cell) return "";
+    if (cell.f !== undefined && cell.f !== null) return String(cell.f).trim();
+    if (cell.v !== undefined && cell.v !== null) return String(cell.v).trim();
+    return "";
+  }
+
   // Event listener input nama
   document.getElementById("namaAnak").addEventListener("input", function() {
     const nama = this.value.trim();
     document.getElementById("btnMulai").disabled = nama.length === 0 || bankSoalUtama.length === 0;
   });
 
-  // Memuat dan mengurai seluruh bank soal dari Google Sheets
+  // Memuat bank soal secara menyeluruh dari Google Sheets
   async function muatBankSoal() {
     try {
       const response = await fetch(SHEET_URL);
@@ -171,17 +178,22 @@
 
       bankSoalUtama = [];
 
-      // Loop mulai dari indeks 1 (Baris 2 di Spreadsheet)
-      for (let i = 1; i < rows.length; i++) {
+      // Membaca dari indeks 0 karena Google Sheets gViz API secara otomatis
+      // menjadikan Baris 1 sebagai nama kolom (header)
+      for (let i = 0; i < rows.length; i++) {
         const c = rows[i].c;
         if (!c) continue;
 
-        // Ambil nilai teks dari sel kolom A, B, dan C secara aman
-        const valA = (c[0] && c[0].v !== null && c[0].v !== undefined) ? String(c[0].v).trim() : "";
-        const valB = (c[1] && c[1].v !== null && c[1].v !== undefined) ? String(c[1].v).trim() : "";
-        const valC = (c[2] && c[2].v !== null && c[2].v !== undefined) ? String(c[2].v).trim() : "";
+        const valA = ambilTeksSel(c[0]);
+        const valB = ambilTeksSel(c[1]);
+        const valC = ambilTeksSel(c[2]);
 
-        // Masukkan ke bank soal jika kolom A (Soal) tidak kosong
+        // Abaikan jika baris tersebut memuat nama header
+        if (valA.toLowerCase() === "a (soal)" || valA.toLowerCase() === "soal") {
+          continue;
+        }
+
+        // Simpan hanya jika kolom soal berisi teks
         if (valA !== "") {
           bankSoalUtama.push({
             soal: valA,
@@ -219,7 +231,7 @@
     document.getElementById("startScreen").style.display = "none";
     document.getElementById("quizScreen").style.display = "block";
 
-    // Acak seluruh kumpulan soal IPAS, Bahasa Inggris, dan Matematika
+    // Acak seluruh kumpulan soal IPAS, B. Inggris, & Matematika secara merata
     antreanSoal = acakArray(bankSoalUtama);
     tampilkanSoalBerikutnya();
   }
@@ -253,7 +265,6 @@
       return;
     }
 
-    // Pengecekan kata kunci fleksibel
     const isCorrect = soalSaatIni.kataKunci.some(keyword => keyword !== "" && inputJawaban.includes(keyword));
 
     if (isCorrect) {
@@ -304,7 +315,7 @@
     muatBankSoal();
   }
 
-  // Panggil pemuatan soal saat aplikasi dibuka
+  // Jalankan pemuatan soal saat halaman pertama kali dibuka
   muatBankSoal();
 </script>
 
