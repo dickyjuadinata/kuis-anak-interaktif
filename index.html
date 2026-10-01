@@ -376,20 +376,19 @@
     document.getElementById("finishNilai").innerText = nilaiAkhir;
     document.getElementById("finishDetail").innerText = `Kamu menjawab ${jumlahBenar} benar dan ${jumlahSalah} salah dari total ${totalSoalDimainkan} soal.`;
 
-    // Kirim Hasil ke Google Spreadsheet
     if (WEB_APP_URL && WEB_APP_URL !== "PASTE_URL_APPS_SCRIPT_ANDA_DI_SINI") {
       const statusElem = document.getElementById("statusSimpan");
       statusElem.innerText = "Menyimpan nilai ke Google Sheets...";
       
-      const payload = new URLSearchParams({
-        waktu: new Date().toLocaleString("id-ID"),
-        nama: namaSiswa,
-        mapel: mapelTerpilihNama,
-        totalSoal: totalSoalDimainkan,
-        jumlahBenar: jumlahBenar,
-        jumlahSalah: jumlahSalah,
-        nilaiAkhir: nilaiAkhir
-      });
+      // Mengirimkan parameter URL-encoded sederhana
+      const bodyData = new URLSearchParams();
+      bodyData.append("waktu", new Date().toLocaleString("id-ID"));
+      bodyData.append("nama", namaSiswa);
+      bodyData.append("mapel", mapelTerpilihNama);
+      bodyData.append("totalSoal", totalSoalDimainkan);
+      bodyData.append("jumlahBenar", jumlahBenar);
+      bodyData.append("jumlahSalah", jumlahSalah);
+      bodyData.append("nilaiAkhir", nilaiAkhir);
 
       try {
         await fetch(WEB_APP_URL, {
@@ -398,7 +397,7 @@
           headers: {
             "Content-Type": "application/x-www-form-urlencoded"
           },
-          body: payload.toString()
+          body: bodyData.toString()
         });
         statusElem.innerText = "✅ Nilai berhasil disimpan!";
       } catch (err) {
